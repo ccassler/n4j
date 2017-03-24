@@ -46,6 +46,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 class N4j {
     static String CLC_IP = System.getProperty("clcip");
@@ -605,60 +607,53 @@ class N4j {
 
     public static List<?> waitForInstances(final long timeout, final int expectedCount, final String groupName,
                                            final boolean asString) throws Exception {
+        return waitForInstances( timeout, expectedCount, groupName, asString, Collections.emptyList( ) );
+    }
+
+    public static List<?> waitForInstances(final long timeout, final int expectedCount, final String groupName,
+                                           final boolean asString, final Collection<String> ignoreIds) throws Exception {
         final long startTime = System.currentTimeMillis();
         boolean completed = false;
-        if (asString) {
-            List<?> instanceIds = Collections.emptyList();
-            while (!completed && (System.currentTimeMillis() - startTime) < timeout) {
-                Thread.sleep(5000);
-                instanceIds = getInstancesForGroup(groupName, "running", true);
-                completed = instanceIds.size() == expectedCount;
-            }
-            assertThat(completed, "Instances count did not change to " + expectedCount + " within the expected timeout");
-            print("Instance count changed in " + (System.currentTimeMillis() - startTime) + "ms");
-            return instanceIds;
-        } else {
-            List<?> instances = Collections.emptyList();
-            while (!completed && (System.currentTimeMillis() - startTime) < timeout) {
-                Thread.sleep(5000);
-                instances = getInstancesForGroup(groupName, "running", false);
-                completed = instances.size() == expectedCount;
-            }
-            assertThat(completed, "Instances count did not change to " + expectedCount + " within the expected timeout");
-            print("Instance count changed in " + (System.currentTimeMillis() - startTime) + "ms");
-            return instances;
+        List<Instance> instances = Collections.emptyList();
+        while (!completed && (System.currentTimeMillis() - startTime) < timeout) {
+            Thread.sleep(5000);
+            instances = getInstancesForGroup(groupName, "running", Function.identity( ) );
+            completed =
+                instances.stream( ).filter( instance -> !ignoreIds.contains( instance.getInstanceId( ) ) ).count( ) ==
+                    expectedCount;
         }
+        assertThat(completed, "Instances count did not change to " + expectedCount + " within the expected timeout");
+        print("Instance count changed in " + (System.currentTimeMillis() - startTime) + "ms");
+        return asString ?
+            instances.stream( ).map( Instance::getInstanceId ).collect( Collectors.toList( ) ):
+            instances;
     }
 
     public static List<?> getInstancesForGroup(final String groupName, final String status, final boolean asString) {
+        if ( asString ) {
+            return getInstancesForGroup( groupName, status, Instance::getInstanceId );
+        } else {
+            return getInstancesForGroup( groupName, status, Function.identity( ) );
+        }
+    }
+
+    public static <T> List<T> getInstancesForGroup( final String groupName, final String status,
+                                                    final Function<Instance,T> resultTransform ) {
         final DescribeInstancesResult instancesResult = ec2
                 .describeInstances(new DescribeInstancesRequest()
                         .withFilters(new Filter()
                                 .withName("tag:aws:autoscaling:groupName")
                                 .withValues(groupName)));
-        if (asString) {
-            final List<String> instanceIds = new ArrayList<String>();
-            for (final Reservation reservation : instancesResult.getReservations()) {
-                for (final Instance instance : reservation.getInstances()) {
-                    if (status == null || instance.getState() == null
-                            || status.equals(instance.getState().getName())) {
-                        instanceIds.add(instance.getInstanceId());
-                    }
+        final List<T> instanceIds = new ArrayList<>();
+        for (final Reservation reservation : instancesResult.getReservations()) {
+            for (final Instance instance : reservation.getInstances()) {
+                if (status == null || instance.getState() == null
+                        || status.equals(instance.getState().getName())) {
+                    instanceIds.add(resultTransform.apply(instance));
                 }
             }
-            return instanceIds;
-        } else {
-            final List<Instance> instances = new ArrayList<Instance>();
-            for (final Reservation reservation : instancesResult.getReservations()) {
-                for (final Instance instance : reservation.getInstances()) {
-                    if (status == null || instance.getState() == null
-                            || status.equals(instance.getState().getName())) {
-                        instances.add(instance);
-                    }
-                }
-            }
-            return instances;
         }
+        return instanceIds;
     }
 
     /**
