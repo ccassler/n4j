@@ -212,7 +212,7 @@ public class TestSTSAssumeRole {
             print("Describing images to ensure no permission with role: " + roleName);
             {
                 try {
-                    final DescribeImagesResult imagesResult = getImagesUsingRole(account, user, roleName, roleArn, "222222222222");
+                    final DescribeImagesResult imagesResult = getImagesUsingRole(awsCredentialsProvider, roleName, roleArn, "222222222222");
                     imagesResult.getImages();
                 } catch (AmazonServiceException e) {
                     print("Got Expected Failure: " + e.getMessage());
@@ -240,32 +240,15 @@ public class TestSTSAssumeRole {
             } );
 
             // Describe images using role
-            try {
-                final DescribeImagesResult imagesResult = getImagesUsingRole(account, user, roleName, roleArn, "222222222222");
-                assertThat(imagesResult.getImages().size() > 0, "Image not found when using role");
-                final String imageId = imagesResult.getImages().get(0).getImageId();
-                print("Found image: " + imageId);
-            } catch ( AmazonServiceException e ) {
-                // TODO this catch block can be removed once this test no longer needs to pass against versions < 5.0
-                print( "WARNING" );
-                print( "WARNING: Unexpected exception assuming role with valid external id, assuming pre-5.0 behaviour: " + e);
-                print( "WARNING" );
-                print( "Authorizing actions on all services for user " + user );
-                createIAMPolicy( account, user, NAME_PREFIX + "policy", null );
-                print( "Sleeping to allow policy change to propagate" );
-                N4j.sleep( 5 );
-                {
-                    final DescribeImagesResult imagesResult = getImagesUsingRole(account, user, roleName, roleArn, "222222222222");
-                    assertThat(imagesResult.getImages().size() > 0, "Image not found when using role");
-                    final String imageId = imagesResult.getImages().get(0).getImageId();
-                    print("Found image: " + imageId);
-                }
-            }
+            final DescribeImagesResult imagesResult = getImagesUsingRole(awsCredentialsProvider, roleName, roleArn, "222222222222");
+            assertThat(imagesResult.getImages().size() > 0, "Image not found when using role");
+            final String imageId = imagesResult.getImages().get(0).getImageId();
+            print("Found image: " + imageId);
 
             // Describe images using role with incorrect external id
             print("Ensuring listing images fails when incorrect external id used with role: " + roleName);
             try {
-                getImagesUsingRole(account, user, roleName, roleArn, "222222222221");
+                getImagesUsingRole(awsCredentialsProvider, roleName, roleArn, "222222222221");
                 assertThat(false, "Expected error due to incorrect external id when assuming role (test must not be run as cloud admin)");
             } catch (AmazonServiceException e) {
                 print("Received expected exception: " + e);
@@ -319,12 +302,6 @@ public class TestSTSAssumeRole {
         }
     }
 
-    private AWSCredentialsProvider getCredentialsProviderForRole( final AWSCredentials creds,
-                                                                  final String roleArn,
-                                                                  final String externalId,
-                                                                  final String sessionName ) {
-        return getCredentialsProviderForRole( new AWSStaticCredentialsProvider( creds ), roleArn, externalId, sessionName );
-    }
 
     private AWSCredentialsProvider getCredentialsProviderForRole( final AWSCredentialsProvider creds,
                                                                   final String roleArn,
@@ -363,22 +340,20 @@ public class TestSTSAssumeRole {
         };
     }
 
-    private AmazonEC2 getEc2ClientUsingRole(final String account,
-                                            final String user,
+    private AmazonEC2 getEc2ClientUsingRole(final AWSCredentialsProvider creds,
                                             final String roleArn,
                                             final String externalId,
                                             final String sessionName) {
-        final AmazonEC2 ec2 = new AmazonEC2Client( getCredentialsProviderForRole( getUserCreds(account,user), roleArn, externalId, sessionName ) );
+        final AmazonEC2 ec2 = new AmazonEC2Client( getCredentialsProviderForRole( creds, roleArn, externalId, sessionName ) );
         ec2.setEndpoint(EC2_ENDPOINT);
         return ec2;
     }
 
-    private DescribeImagesResult getImagesUsingRole(final String account,
-                                                    final String user,
+    private DescribeImagesResult getImagesUsingRole(final AWSCredentialsProvider creds,
                                                     final String roleName,
                                                     final String roleArn,
                                                     String externalId) {
-        final AmazonEC2 ec2 = getEc2ClientUsingRole(account, user, roleArn, externalId, "session-name-here");
+        final AmazonEC2 ec2 = getEc2ClientUsingRole(creds, roleArn, externalId, "session-name-here");
 
         print("Searching images using role: " + roleName);
         return ec2.describeImages(new DescribeImagesRequest().withFilters(
