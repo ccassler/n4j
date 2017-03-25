@@ -611,26 +611,26 @@ public class S3ObjectACLTests {
 
       AccessControlList acl = new AccessControlList();
       acl.setOwner(owner);
-      acl.getGrantsAsList().add(new Grant(GroupGrantee.AuthenticatedUsers, Permission.FullControl));
+      acl.getGrants().add(new Grant(GroupGrantee.AuthenticatedUsers, Permission.FullControl));
+      acl.getGrants().add(ownerGrant);
       print(account + ": Setting ACL for " + key + " to " + acl);
       s3.setObjectAcl(bucketName, key, acl);
-      acl.getGrantsAsList().add(ownerGrant);
       S3Utils.verifyObjectACL(s3, ownerName, bucketName, key, acl, ownerId);
 
       acl = new AccessControlList();
       acl.setOwner(owner);
-      acl.getGrantsAsList().add(new Grant(GroupGrantee.AllUsers, Permission.WriteAcp));
+      acl.getGrants().add(new Grant(GroupGrantee.AllUsers, Permission.WriteAcp));
+      acl.getGrants().add(ownerGrant);
       print(account + ": Setting ACL for " + key + " to " + acl);
       s3.setObjectAcl(bucketName, key, acl);
-      acl.getGrantsAsList().add(ownerGrant);
       S3Utils.verifyObjectACL(s3, ownerName, bucketName, key, acl, ownerId);
 
       acl = new AccessControlList();
       acl.setOwner(owner);
-      acl.getGrantsAsList().add(new Grant(GroupGrantee.LogDelivery, Permission.ReadAcp));
+      acl.getGrants().add(new Grant(GroupGrantee.LogDelivery, Permission.ReadAcp));
+      acl.getGrants().add(ownerGrant);
       print(account + ": Setting ACL for " + key + " to " + acl);
       s3.setObjectAcl(bucketName, key, acl);
-      acl.getGrantsAsList().add(ownerGrant);
       S3Utils.verifyObjectACL(s3, ownerName, bucketName, key, acl, ownerId);
     } catch (AmazonServiceException ase) {
       printException(ase);

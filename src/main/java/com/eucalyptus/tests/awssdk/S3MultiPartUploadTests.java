@@ -825,7 +825,8 @@ public class S3MultiPartUploadTests {
 
       Grant ownerGrant = new Grant(new CanonicalGrantee(ownerId), Permission.FullControl);
       AccessControlList acl = new AccessControlList();
-      acl.getGrantsAsList().add(new Grant(GroupGrantee.LogDelivery, Permission.WriteAcp));
+      acl.getGrants().add(new Grant(GroupGrantee.LogDelivery, Permission.WriteAcp));
+      acl.getGrants().add(ownerGrant);
 
       // Inititate mpu with canned ACL
       print(account + ": Initiating multipart upload for object " + key + " in bucket " + bucketName);
@@ -852,7 +853,7 @@ public class S3MultiPartUploadTests {
         }
       });
 
-      acl.getGrantsAsList().add(ownerGrant);
+
       S3Utils.verifyObjectACL(s3, ownerName, bucketName, key, acl, ownerId);
     } catch (AmazonServiceException ase) {
       printException(ase);
