@@ -572,6 +572,23 @@ public class S3BucketACLTests {
   }
 
   @Test
+  public void createBucket_ACL_Headers_No_Default() throws Exception {
+    testInfo(this.getClass().getSimpleName() + " - createBucket_ACL_Headers");
+    try {
+      AccessControlList acl = new AccessControlList();
+      acl.getGrants().add(new Grant(GroupGrantee.AuthenticatedUsers, Permission.ReadAcp));
+      acl.getGrants().add(new Grant(GroupGrantee.AuthenticatedUsers, Permission.Write));
+      acl.getGrants().add(new Grant(GroupGrantee.LogDelivery, Permission.Write));
+      acl.getGrants().add(new Grant(GroupGrantee.AllUsers, Permission.FullControl));
+      createBucketWithACL(bucketName, acl);
+      S3Utils.verifyBucketACL(s3, ownerName, bucketName, acl, ownerId);
+    } catch (AmazonServiceException ase) {
+      printException(ase);
+      assertThat(false, "Failed to run createBucket_ACL_Headers");
+    }
+  }
+
+  @Test
   public void setBucket_ACL_XMLBody() throws Exception {
     testInfo(this.getClass().getSimpleName() + " - setBucket_ACL_XMLBody");
     try {
@@ -582,6 +599,25 @@ public class S3BucketACLTests {
       acl.getGrantsAsList().add(new Grant(GroupGrantee.LogDelivery, Permission.FullControl));
       acl.getGrantsAsList().add(new Grant(GroupGrantee.AllUsers, Permission.WriteAcp));
       acl.getGrantsAsList().add(new Grant(new CanonicalGrantee(ownerId), Permission.FullControl));
+      print(account + ": Setting ACL " + acl + " for bucket " + bucketName);
+      s3.setBucketAcl(bucketName, acl);
+      S3Utils.verifyBucketACL(s3, ownerName, bucketName, acl, ownerId);
+    } catch (AmazonServiceException ase) {
+      printException(ase);
+      assertThat(false, "Failed to run setBucket_ACL_XMLBody");
+    }
+  }
+
+  @Test
+  public void setBucket_ACL_XMLBody_No_Default() throws Exception {
+    testInfo(this.getClass().getSimpleName() + " - setBucket_ACL_XMLBody");
+    try {
+      createBucket(bucketName);
+
+      AccessControlList acl = new AccessControlList();
+      acl.setOwner(owner);
+      acl.getGrants().add(new Grant(GroupGrantee.LogDelivery, Permission.FullControl));
+      acl.getGrants().add(new Grant(GroupGrantee.AllUsers, Permission.WriteAcp));
       print(account + ": Setting ACL " + acl + " for bucket " + bucketName);
       s3.setBucketAcl(bucketName, acl);
       S3Utils.verifyBucketACL(s3, ownerName, bucketName, acl, ownerId);

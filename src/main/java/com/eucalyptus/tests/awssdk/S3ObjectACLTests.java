@@ -619,6 +619,13 @@ public class S3ObjectACLTests {
 
       acl = new AccessControlList();
       acl.setOwner(owner);
+      acl.getGrants().add(new Grant(GroupGrantee.AuthenticatedUsers, Permission.FullControl));
+      print(account + ": Setting ACL for " + key + " to " + acl);
+      s3.setObjectAcl(bucketName, key, acl);
+      S3Utils.verifyObjectACL(s3, ownerName, bucketName, key, acl, ownerId);
+
+      acl = new AccessControlList();
+      acl.setOwner(owner);
       acl.getGrants().add(new Grant(GroupGrantee.AllUsers, Permission.WriteAcp));
       acl.getGrants().add(ownerGrant);
       print(account + ": Setting ACL for " + key + " to " + acl);
