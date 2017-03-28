@@ -5,9 +5,10 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Request;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.handlers.RequestHandler2;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
 import com.amazonaws.services.autoscaling.model.*;
@@ -471,11 +472,12 @@ class N4j {
      * The YouAre interface extends AmazonIdentityManagement so you have the
      * regular IAM actions plus (a few) Euare specific ones.
      */
-    public static YouAre getYouAreClient(String accessKey, String secretKey,
-                                                        String endpoint) {
-        AWSCredentialsProvider awsCredentialsProvider =
-                new AWSStaticCredentialsProvider( new BasicAWSCredentials(accessKey, secretKey));
-        final YouAre youAre = new YouAreClient(awsCredentialsProvider);
+    public static YouAre getYouAreClient(String accessKey, String secretKey, String endpoint) {
+        return getYouAreClient( new BasicAWSCredentials(accessKey, secretKey), endpoint );
+    }
+
+    public static YouAre getYouAreClient(AWSCredentials credentials, String endpoint) {
+        final YouAre youAre = new YouAreClient(credentials);
         youAre.setEndpoint(endpoint);
         return youAre;
     }
@@ -517,6 +519,17 @@ class N4j {
         return result;
     }
 
+    public static AmazonS3 getS3SigV4Client(AWSCredentials credentials, String endpoint) {
+        return getS3SigV4Client( new AWSStaticCredentialsProvider( credentials ), endpoint );
+    }
+
+    public static AmazonS3 getS3SigV4Client(AWSCredentialsProvider credentials, String endpoint) {
+        return AmazonS3Client.builder( )
+            .withCredentials( credentials )
+            .withClientConfiguration( new ClientConfiguration( ).withSignerOverride("AWSS3V4SignerType") )
+            .withEndpointConfiguration( new AwsClientBuilder.EndpointConfiguration( endpoint, "eucalyptus" ) )
+            .build( );
+    }
 
     /**
      * @param credpath
