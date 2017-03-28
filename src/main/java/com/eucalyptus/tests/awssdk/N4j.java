@@ -7,14 +7,8 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-//<<<<<<< HEAD
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.handlers.RequestHandler2;
-//=======
 import com.amazonaws.client.builder.AwsClientBuilder;
-//import com.amazonaws.handlers.AbstractRequestHandler;
-//import com.amazonaws.internal.StaticCredentialsProvider;
-//>>>>>>> 3e58608578956f607f4239c7c827da742aeb944e
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
 import com.amazonaws.services.autoscaling.AmazonAutoScalingClient;
 import com.amazonaws.services.autoscaling.model.*;
@@ -478,20 +472,12 @@ class N4j {
      * The YouAre interface extends AmazonIdentityManagement so you have the
      * regular IAM actions plus (a few) Euare specific ones.
      */
-//<<<<<<< HEAD
-//    public static YouAre getYouAreClient(String accessKey, String secretKey,
-//                                                        String endpoint) {
-//        AWSCredentialsProvider awsCredentialsProvider =
-//                new AWSStaticCredentialsProvider( new BasicAWSCredentials(accessKey, secretKey));
-//        final YouAre youAre = new YouAreClient(awsCredentialsProvider);
-//=======
     public static YouAre getYouAreClient(String accessKey, String secretKey, String endpoint) {
         return getYouAreClient( new BasicAWSCredentials(accessKey, secretKey), endpoint );
     }
 
     public static YouAre getYouAreClient(AWSCredentials credentials, String endpoint) {
         final YouAre youAre = new YouAreClient(credentials);
-//>>>>>>> 3e58608578956f607f4239c7c827da742aeb944e
         youAre.setEndpoint(endpoint);
         return youAre;
     }
@@ -516,7 +502,6 @@ class N4j {
         return s3;
     }
 
-//<<<<<<< HEAD
     public static String getConfigProperty(String configPath, String field) throws IOException {
         Charset charset = Charset.forName("UTF-8");
         String result = null;
